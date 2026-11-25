@@ -1158,9 +1158,6 @@
     if (!pushOffEdge && boards[boardId][pushToR][pushToC] !== null) {
       return null;
     }
-    if (!pushOffEdge && pushToR === landingR && pushToC === landingC) {
-      return null;
-    }
 
     return {
       boardId,

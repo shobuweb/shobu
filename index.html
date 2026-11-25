@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>SHŌBU</title>
+<title>SH<span class="o-macron">O</span>BU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700;900&display=swap" rel="stylesheet" />
@@ -860,15 +860,13 @@
   .o-macron {
     position: relative;
     display: inline-block;
-    letter-spacing: 0;
   }
 
   .o-macron::after {
     content: "";
     position: absolute;
-    left: 50%;
-    width: 0.64em;
-    transform: translateX(-52%);
+    left: 10%;
+    right: 10%;
     top: 0.07em;
     height: 0.085em;
     border-radius: 999px;
@@ -1110,8 +1108,10 @@
   }
 
   // Aggressive move: same direction (dr, dc) and distance (dist) on a board of opposite color
-  // to passiveBoardId. Can push at most 1 opponent stone by 1 step along (dr, dc)
-  // whether moving 1 space or 2 spaces (encountering the opponent on step 1 or step 2).
+  // to passiveBoardId. Can push at most 1 opponent stone by 1 step in (dr, dc).
+  // Note: If the active stone moves 2 steps and encounters an opponent stone on step 1 or step 2,
+  // it pushes that opponent stone 1 step along (dr, dc) while advancing `dist` steps from (r, c)
+  // (or landing at step 2 if a stone at step 1 is pushed 1 step to step 2).
   function evaluateAggressiveMove(boards, boardId, r, c, playerColor, passiveMove) {
     if (!passiveMove) return null;
     if (!isOppositeColorBoard(boardId, passiveMove.boardId)) return null;
@@ -1131,16 +1131,14 @@
     const blockers = pathCells.filter(cell => cell.occupant !== null);
     if (blockers.length > 1) return null;
 
-    const landingR = r + dr * dist;
-    const landingC = c + dc * dist;
-
     if (blockers.length === 0) {
+      const dest = pathCells[pathCells.length - 1];
       return {
         boardId,
         fromR: r,
         fromC: c,
-        toR: landingR,
-        toC: landingC,
+        toR: dest.r,
+        toC: dest.c,
         dr,
         dc,
         dist,
@@ -1149,13 +1147,22 @@
     }
 
     const blocker = blockers[0];
+    if (blocker.occupant === playerColor) return null;
     if (blocker.occupant !== opp) return null;
 
     const pushToR = blocker.r + dr;
     const pushToC = blocker.c + dc;
     const pushOffEdge = !inBounds(pushToR, pushToC);
 
-    if (!pushOffEdge && boards[boardId][pushToR][pushToC] !== null) {
+    // If not pushed off the edge, the destination square for the pushed stone must be empty,
+    // OR it is the active stone's own `dist`-step landing square when dist === 2 and blocker was at step 1
+    // (in which case the blocker moves from step 1 -> step 2 and the active stone moves from 0 -> step 2).
+    const landingR = r + dr * dist;
+    const landingC = c + dc * dist;
+    const blockerMovesIntoLanding =
+      !pushOffEdge && pushToR === landingR && pushToC === landingC;
+
+    if (!pushOffEdge && !blockerMovesIntoLanding && boards[boardId][pushToR][pushToC] !== null) {
       return null;
     }
 
@@ -1190,6 +1197,7 @@
     const opp = opponentOf(playerColor);
     const b = aggMove.boardId;
 
+    // Clear starting square first so a 2-step move onto a pushed stone's vacated square doesn't get wiped
     next[b][aggMove.fromR][aggMove.fromC] = null;
 
     if (aggMove.pushed) {
@@ -1573,6 +1581,8 @@
   function handleStoneClick(boardId, r, c) {
     if (!canActNow()) return;
 
+    // In aggressive phase, if a stone is already selected and has a valid push move
+    // against this opponent stone, clicking this opponent stone executes the push move!
     if (state.phase === "aggressive" && state.selectedStone && state.passiveMove) {
       const { boardId: sBoard, r: sR, c: sC } = state.selectedStone;
       if (sBoard === boardId) {
@@ -1862,7 +1872,11 @@
           state.passiveMove
         );
         if (evalMove) {
-          aggDestMap.set(`${evalMove.boardId}:${evalMove.toR}:${evalMove.toC}`, evalMove);
+          // Only mark the actual landing socket if it is currently empty (or if clicking the pushed stone itself)
+          const landingOccupant = state.boards[evalMove.boardId][evalMove.toR][evalMove.toC];
+          if (landingOccupant === null || (evalMove.toR === sR && evalMove.toC === sC)) {
+            aggDestMap.set(`${evalMove.boardId}:${evalMove.toR}:${evalMove.toC}`, evalMove);
+          }
           if (evalMove.pushed) {
             aggDestMap.set(`${evalMove.boardId}:${evalMove.pushed.fromR}:${evalMove.pushed.fromC}`, evalMove);
           }

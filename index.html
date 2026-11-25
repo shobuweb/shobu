@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>SHŌBU</title>
+<title>SH<span class="o-macron">O</span>BU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700;900&display=swap" rel="stylesheet" />
@@ -856,6 +856,23 @@
   .hidden {
     display: none !important;
   }
+
+  .o-macron {
+    position: relative;
+    display: inline-block;
+  }
+
+  .o-macron::after {
+    content: "";
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 0.07em;
+    height: 0.085em;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
 </style>
 </head>
 <body>
@@ -864,7 +881,7 @@
 <div class="app" id="app">
   <header class="topbar">
     <div class="topbar-left">
-      <button type="button" class="brand-mini" id="logoHomeBtn" title="Lobby">SHŌBU</button>
+      <button type="button" class="brand-mini" id="logoHomeBtn" title="Lobby">SH<span class="o-macron">O</span>BU</button>
       <button type="button" class="pill pill-code hidden" id="roomPill" title="Copy room code"></button>
       <div class="pill pill-turn hidden" id="turnPill">
         <span class="dot" id="turnDot"></span>
@@ -881,7 +898,7 @@
   <!-- LOBBY -->
   <main class="lobby" id="lobbyView">
     <div class="lobby-card">
-      <h1 class="lobby-title">SHŌBU</h1>
+      <h1 class="lobby-title">SH<span class="o-macron">O</span>BU</h1>
 
       <div class="mode-switch" role="tablist">
         <button type="button" class="mode-btn active" id="tabOnline" role="tab" aria-selected="true">Online</button>
@@ -939,7 +956,7 @@
 <div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
   <div class="modal">
     <div class="modal-head">
-      <h2 class="modal-title" id="rulesTitle">SHŌBU</h2>
+      <h2 class="modal-title" id="rulesTitle">SH<span class="o-macron">O</span>BU</h2>
       <button type="button" class="close-x" id="closeRulesBtn" aria-label="Close">×</button>
     </div>
     <ul class="rules-list">

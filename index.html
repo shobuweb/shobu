@@ -860,13 +860,15 @@
   .o-macron {
     position: relative;
     display: inline-block;
+    letter-spacing: 0;
   }
 
   .o-macron::after {
     content: "";
     position: absolute;
-    left: 10%;
-    right: 10%;
+    left: 50%;
+    width: 0.64em;
+    transform: translateX(-52%);
     top: 0.07em;
     height: 0.085em;
     border-radius: 999px;
@@ -1131,14 +1133,16 @@
     const blockers = pathCells.filter(cell => cell.occupant !== null);
     if (blockers.length > 1) return null;
 
+    const landingR = r + dr * dist;
+    const landingC = c + dc * dist;
+
     if (blockers.length === 0) {
-      const dest = pathCells[pathCells.length - 1];
       return {
         boardId,
         fromR: r,
         fromC: c,
-        toR: dest.r,
-        toC: dest.c,
+        toR: landingR,
+        toC: landingC,
         dr,
         dc,
         dist,
@@ -1147,22 +1151,18 @@
     }
 
     const blocker = blockers[0];
-    if (blocker.occupant === playerColor) return null;
     if (blocker.occupant !== opp) return null;
 
     const pushToR = blocker.r + dr;
     const pushToC = blocker.c + dc;
     const pushOffEdge = !inBounds(pushToR, pushToC);
 
-    // If not pushed off the edge, the destination square for the pushed stone must be empty,
-    // OR it is the active stone's own `dist`-step landing square when dist === 2 and blocker was at step 1
-    // (in which case the blocker moves from step 1 -> step 2 and the active stone moves from 0 -> step 2).
-    const landingR = r + dr * dist;
-    const landingC = c + dc * dist;
-    const blockerMovesIntoLanding =
-      !pushOffEdge && pushToR === landingR && pushToC === landingC;
-
-    if (!pushOffEdge && !blockerMovesIntoLanding && boards[boardId][pushToR][pushToC] !== null) {
+    // The square receiving the pushed stone must either be off the edge (eliminated)
+    // or completely empty; your stone cannot land on the pushed stone's destination.
+    if (!pushOffEdge && boards[boardId][pushToR][pushToC] !== null) {
+      return null;
+    }
+    if (!pushOffEdge && pushToR === landingR && pushToC === landingC) {
       return null;
     }
 

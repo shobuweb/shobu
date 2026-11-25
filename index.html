@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>SHŌBU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #111111;
+    --muted: #6b6b66;
+    --line: #e5e2dc;
+    --surface: #faf9f6;
+    --light-board: #dfd5c5;
+    --light-socket: #b8aea0;
+    --dark-board: #c2ad8e;
+    --dark-socket: #9c886b;
+    --stone-black: #111111;
+    --stone-white: #ffffff;
+    --stone-white-stroke: #d8d3c8;
+
+    --blue-accent: #0284c7;
+    --blue-deep: #0369a1;
+    --blue-bright: #38bdf8;
+    --blue-soft: #e0f2fe;
+    --blue-border: #7dd3fc;
+    --blue-ring: rgba(2, 132, 199, 0.24);
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100dvh;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+  }
+
+  body.in-game {
+    height: 100dvh;
+    height: 100svh;
+    max-height: 100dvh;
+    max-height: 100svh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  .app {
+    width: 100%;
+    min-height: 100dvh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  body.in-game .app {
+    height: 100dvh;
+    height: 100svh;
+    max-height: 100dvh;
+    max-height: 100svh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Subtle Lobby Texture (Harlequin + Fine Lattice) */
+  .lobby-bg-texture {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-color: #ffffff;
+    background-image:
+      linear-gradient(45deg, rgba(194, 173, 142, 0.085) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(194, 173, 142, 0.085) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(223, 213, 197, 0.12) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(223, 213, 197, 0.12) 75%),
+      radial-gradient(rgba(120, 113, 102, 0.13) 0.9px, transparent 0.9px);
+    background-size: 44px 44px, 44px 44px, 44px 44px, 44px 44px, 22px 22px;
+    background-position: 0 0, 0 22px, 22px -22px, -22px 0, 11px 11px;
+    -webkit-mask-image: radial-gradient(ellipse 84% 78% at 50% 48%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.22) 76%, transparent 100%);
+    mask-image: radial-gradient(ellipse 84% 78% at 50% 48%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.22) 76%, transparent 100%);
+  }
+
+  body.in-game .lobby-bg-texture {
+    display: none;
+  }
+
+  /* Top Bar */
+  .topbar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 8px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .topbar-left, .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .brand-mini {
+    font-family: 'Noto Serif JP', Georgia, serif;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+
+  .brand-mini:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  .pill-code {
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+  }
+
+  .pill-code:hover {
+    border-color: #c8c3b8;
+    background: var(--surface);
+  }
+
+  .pill-turn {
+    border-color: #d4cfc5;
+    background: var(--surface);
+  }
+
+  .pill-turn.agg {
+    border-color: var(--blue-border);
+    background: var(--blue-soft);
+    color: var(--blue-deep);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .dot.white {
+    background: #ffffff;
+    border: 1.5px solid var(--ink);
+  }
+
+  .dot.agg {
+    background: var(--blue-accent);
+    border-color: var(--blue-accent);
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: var(--surface);
+    border-color: #cbc6bc;
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .icon-btn.active {
+    background: var(--blue-soft);
+    border-color: var(--blue-border);
+    color: var(--blue-deep);
+  }
+
+  /* Lobby View */
+  .lobby {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px 44px;
+  }
+
+  .lobby-card {
+    width: 100%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(214, 206, 193, 0.72);
+    border-radius: 22px;
+    padding: 24px 20px 22px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+  }
+
+  .lobby-title {
+    margin: 0;
+    font-family: 'Noto Serif JP', Georgia, serif;
+    font-weight: 900;
+    font-size: clamp(36px, 9vw, 48px);
+    letter-spacing: 0.06em;
+    line-height: 1.05;
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    background: #f1efe9;
+    padding: 3px;
+    border-radius: 12px;
+    border: 1px solid #e3dfd6;
+  }
+
+  .mode-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mode-btn.active {
+    background: #ffffff;
+    color: var(--ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  }
+
+  .color-pick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .color-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .color-btn:hover {
+    border-color: #c8c2b6;
+  }
+
+  .color-btn.selected {
+    border-color: var(--ink);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .swatch {
+    width: 16px;
+    height: 16px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    border-radius: 50%;
+  }
+
+  .swatch.black {
+    background: var(--stone-black);
+  }
+
+  .swatch.white {
+    background: var(--stone-white);
+    border: 1.5px solid #c7c2b7;
+  }
+
+  .primary-btn {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease;
+  }
+
+  .primary-btn:hover {
+    opacity: 0.92;
+  }
+
+  .primary-btn:active {
+    transform: scale(0.99);
+  }
+
+  .join-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .code-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .code-input:focus {
+    border-color: var(--blue-accent);
+  }
+
+  .secondary-btn {
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .secondary-btn:hover {
+    border-color: #c2bcb0;
+    background: var(--surface);
+  }
+
+  .lobby-msg {
+    min-height: 18px;
+    font-size: 12px;
+    color: var(--blue-deep);
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* Game Arena */
+  .game-view {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+  }
+
+  .turn-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 24px;
+    max-width: 100%;
+    flex-shrink: 0;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(250, 249, 246, 0.9);
+    border: 1px solid #ece8e0;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .turn-strip-badge {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .turn-strip.agg .turn-strip-badge {
+    color: var(--blue-deep);
+  }
+
+  .arena-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 540px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .arena {
+    --gap: clamp(10px, 2.6vw, 18px);
+    --board-size: min(
+      calc((100vw - 24px - var(--gap)) / 2),
+      calc((var(--arena-h, 520px) - var(--gap) - 10px) / 2),
+      260px
+    );
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, var(--board-size));
+    grid-template-rows: repeat(2, var(--board-size));
+    gap: var(--gap);
+    padding: 4px;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .arena::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 50%;
+    height: 1px;
+    transform: translateY(-0.5px);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(120, 113, 102, 0.22) 18%,
+      rgba(120, 113, 102, 0.34) 50%,
+      rgba(120, 113, 102, 0.22) 82%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .arena.flipped {
+    transform: rotate(180deg);
+  }
+
+  .board {
+    width: var(--board-size);
+    height: var(--board-size);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    border-radius: clamp(14px, 3.6vw, 22px);
+    padding: clamp(8px, 2vw, 14px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: clamp(4px, 1.1vw, 8px);
+    position: relative;
+    transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  }
+
+  .board.light {
+    background: linear-gradient(165deg, #e5dccd 0%, var(--light-board) 100%);
+    border: 1px solid rgba(156, 144, 126, 0.35);
+    box-shadow:
+      0 6px 14px rgba(0, 0, 0, 0.065),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .board.dark {
+    background: linear-gradient(165deg, #cbb799 0%, var(--dark-board) 100%);
+    border: 1px solid rgba(133, 113, 84, 0.35);
+    box-shadow:
+      0 6px 14px rgba(0, 0, 0, 0.075),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  }
+
+  .board.active-home {
+    box-shadow:
+      0 0 0 2px rgba(17, 17, 17, 0.22),
+      0 8px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .board.active-agg {
+    box-shadow:
+      0 0 0 2.5px var(--blue-bright),
+      0 8px 20px rgba(2, 132, 199, 0.2);
+  }
+
+  .cell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .socket {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .board.light .socket {
+    background: var(--light-socket);
+    box-shadow: inset 0 1.5px 2.5px rgba(0, 0, 0, 0.14);
+  }
+
+  .board.dark .socket {
+    background: var(--dark-socket);
+    box-shadow: inset 0 1.5px 2.5px rgba(0, 0, 0, 0.17);
+  }
+
+  .socket.dest-passive {
+    cursor: pointer;
+    box-shadow:
+      inset 0 0 0 2.5px var(--ink),
+      0 0 0 3px rgba(17, 17, 17, 0.12);
+  }
+
+  .socket.dest-passive::after {
+    content: "";
+    width: 30%;
+    height: 30%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background: var(--ink);
+    opacity: 0.72;
+  }
+
+  .socket.dest-agg {
+    cursor: pointer;
+    box-shadow:
+      inset 0 0 0 2.5px var(--blue-accent),
+      0 0 0 3px var(--blue-ring);
+  }
+
+  .socket.dest-agg::after {
+    content: "";
+    width: 32%;
+    height: 32%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background: var(--blue-accent);
+  }
+
+  .socket.push-victim {
+    box-shadow:
+      inset 0 0 0 2.5px var(--blue-bright),
+      0 0 0 3.5px rgba(56, 189, 248, 0.34);
+  }
+
+  .socket.push-out {
+    background: var(--blue-soft) !important;
+    box-shadow:
+      inset 0 0 0 2px var(--blue-accent),
+      0 0 0 3px rgba(2, 132, 199, 0.22);
+  }
+
+  .socket.last-from {
+    box-shadow: inset 0 0 0 1.5px rgba(17, 17, 17, 0.25);
+  }
+
+  .stone {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
+  }
+
+  .stone.black {
+    background: radial-gradient(circle at 32% 28%, #292929 0%, var(--stone-black) 72%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.28);
+  }
+
+  .stone.white {
+    background: radial-gradient(circle at 34% 30%, #ffffff 0%, #f7f5f0 100%);
+    border: 1px solid var(--stone-white-stroke);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+
+  .stone.movable {
+    cursor: pointer;
+  }
+
+  .stone.movable:hover {
+    transform: scale(1.06);
+  }
+
+  .stone.selected {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 2.5px #ffffff,
+      0 0 0 5px var(--ink),
+      0 4px 10px rgba(0, 0, 0, 0.22);
+  }
+
+  .stone.selected.agg-selected {
+    box-shadow:
+      0 0 0 2.5px #ffffff,
+      0 0 0 5px var(--blue-accent),
+      0 4px 10px rgba(2, 132, 199, 0.32);
+  }
+
+  .stone.passive-anchor {
+    box-shadow:
+      0 0 0 2px var(--blue-bright),
+      0 0 0 4px rgba(56, 189, 248, 0.25);
+  }
+
+  .stone.pushed-preview {
+    transform: scale(0.94);
+    box-shadow:
+      0 0 0 2.5px var(--blue-bright),
+      0 0 0 5px rgba(56, 189, 248, 0.32);
+  }
+
+  .arena.flipped .stone.selected {
+    transform: rotate(180deg) scale(1.08);
+  }
+
+  .arena.flipped .stone.pushed-preview {
+    transform: rotate(180deg) scale(0.94);
+  }
+
+  /* Bottom Action Bar */
+  .action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 36px;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+  }
+
+  .action-btn:hover:not(:disabled) {
+    background: var(--surface);
+    border-color: #c8c2b6;
+  }
+
+  .action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(8px);
+    background: var(--blue-deep);
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 40;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Modal Backdrop */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 17, 17, 0.35);
+    backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+
+  .modal-backdrop.open {
+    display: flex;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 340px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 22px 20px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    margin: 0;
+    font-family: 'Noto Serif JP', Georgia, serif;
+    font-weight: 900;
+    font-size: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .close-x {
+    width: 28px;
+    height: 28px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: #ffffff;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .rules-list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+
+  .rules-list strong.blue-tag {
+    color: var(--blue-deep);
+  }
+
+  .win-banner {
+    text-align: center;
+    padding: 6px 0 2px;
+  }
+
+  .win-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+<div class="lobby-bg-texture" aria-hidden="true"></div>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button type="button" class="brand-mini" id="logoHomeBtn" title="Lobby">SHŌBU</button>
+      <button type="button" class="pill pill-code hidden" id="roomPill" title="Copy room code"></button>
+      <div class="pill pill-turn hidden" id="turnPill">
+        <span class="dot" id="turnDot"></span>
+        <span id="turnText">Black · Passive</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button type="button" class="icon-btn hidden" id="flipToggleBtn" title="Auto-flip board">Auto-Flip</button>
+      <button type="button" class="icon-btn" id="rulesBtn">Rules</button>
+      <button type="button" class="icon-btn hidden" id="leaveBtn">Leave</button>
+    </div>
+  </header>
+
+  <!-- LOBBY -->
+  <main class="lobby" id="lobbyView">
+    <div class="lobby-card">
+      <h1 class="lobby-title">SHŌBU</h1>
+
+      <div class="mode-switch" role="tablist">
+        <button type="button" class="mode-btn active" id="tabOnline" role="tab" aria-selected="true">Online</button>
+        <button type="button" class="mode-btn" id="tabLocal" role="tab" aria-selected="false">Pass &amp; Play</button>
+      </div>
+
+      <div id="onlineControls" style="width:100%; display:flex; flex-direction:column; gap:12px;">
+        <div class="color-pick">
+          <button type="button" class="color-btn selected" id="pickBlack" data-color="black">
+            <span class="swatch black"></span>
+            <span>Black</span>
+          </button>
+          <button type="button" class="color-btn" id="pickWhite" data-color="white">
+            <span class="swatch white"></span>
+            <span>White</span>
+          </button>
+        </div>
+
+        <button type="button" class="primary-btn" id="createRoomBtn">Create Room</button>
+
+        <div class="join-row">
+          <input type="text" class="code-input" id="joinCodeInput" maxlength="5" placeholder="CODE" autocomplete="off" spellcheck="false" />
+          <button type="button" class="secondary-btn" id="joinRoomBtn">Join</button>
+        </div>
+      </div>
+
+      <div id="localControls" class="hidden" style="width:100%; display:flex; flex-direction:column; gap:12px;">
+        <button type="button" class="primary-btn" id="startLocalBtn">Start Game</button>
+      </div>
+
+      <div class="lobby-msg" id="lobbyMsg"></div>
+    </div>
+  </main>
+
+  <!-- GAME -->
+  <main class="game-view hidden" id="gameView">
+    <div class="turn-strip" id="turnStrip">
+      <span class="turn-strip-badge" id="turnStripPhase">Passive</span>
+      <span id="turnStripHint">Move 1–2 spaces on a home board</span>
+    </div>
+
+    <div class="arena-wrap" id="arenaWrap">
+      <div class="arena" id="arena"></div>
+    </div>
+
+    <div class="action-bar" id="actionBar">
+      <button type="button" class="action-btn" id="undoPassiveBtn" disabled>Undo Passive</button>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- RULES MODAL -->
+<div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 class="modal-title" id="rulesTitle">SHŌBU</h2>
+      <button type="button" class="close-x" id="closeRulesBtn" aria-label="Close">×</button>
+    </div>
+    <ul class="rules-list">
+      <li><strong>Turn:</strong> Make a <em>Passive</em> move on one of your two home boards, then a matching <strong class="blue-tag">Aggressive</strong> move on a board of the opposite color.</li>
+      <li><strong>Distance:</strong> Move 1 or 2 steps orthogonally or diagonally without jumping stones.</li>
+      <li><strong>Push:</strong> Your <strong class="blue-tag">Aggressive</strong> stone can push 1 opponent stone 1 step in the same direction—off the edge to eliminate it.</li>
+      <li><strong>Win:</strong> Knock all 4 of your opponent's stones off any single board.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- WIN MODAL -->
+<div class="modal-backdrop" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="modal">
+    <div class="win-banner">
+      <h2 class="modal-title" id="winTitle">Black Wins</h2>
+      <div class="win-sub" id="winSub">All opponent stones cleared from a board.</div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="primary-btn" id="rematchBtn">Rematch</button>
+      <button type="button" class="secondary-btn" id="winLobbyBtn">Lobby</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    set,
+    get,
+    update,
+    onValue,
+    onDisconnect,
+    remove
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // Firebase Realtime Database configuration for project `shobu-game`
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCdoLqrRqjwsObPJtCvEWtoiPauCSi02lE",
+    authDomain: "shobu-game.firebaseapp.com",
+    databaseURL: "https://shobu-game-default-rtdb.firebaseio.com",
+    projectId: "shobu-game",
+    storageBucket: "shobu-game.firebasestorage.app",
+    messagingSenderId: "975138403085",
+    appId: "1:975138403085:web:65f67d6e8a655aae1f3644",
+    measurementId: "G-5BFZFKBH2H"
+  };
+
+  let db = null;
+  let firebaseReady = false;
+  try {
+    const fbApp = initializeApp(FIREBASE_CONFIG);
+    db = getDatabase(fbApp);
+    firebaseReady = true;
+  } catch (err) {
+    console.warn("Firebase init warning:", err);
+  }
+
+  // Board layout:
+  // Top row (closer to White's canonical side): board 0 (light), board 1 (dark)
+  // Bottom row (closer to Black's canonical side): board 2 (light), board 3 (dark)
+  // Canonical row 0 = White's starting back rank; row 3 = Black's starting back rank.
+  const BOARD_META = [
+    { id: 0, color: "light", owner: "white" },
+    { id: 1, color: "dark",  owner: "white" },
+    { id: 2, color: "light", owner: "black" },
+    { id: 3, color: "dark",  owner: "black" }
+  ];
+
+  const DIRS = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [ 0, -1],          [ 0, 1],
+    [ 1, -1], [ 1, 0], [ 1, 1]
+  ];
+
+  function opponentOf(color) {
+    return color === "black" ? "white" : "black";
+  }
+
+  function createInitialBoards() {
+    return [0, 1, 2, 3].map(() => {
+      const grid = Array.from({ length: 4 }, () => Array(4).fill(null));
+      for (let c = 0; c < 4; c++) {
+        grid[0][c] = "white";
+        grid[3][c] = "black";
+      }
+      return grid;
+    });
+  }
+
+  function cloneBoards(boards) {
+    return boards.map(grid => grid.map(row => [...row]));
+  }
+
+  function inBounds(r, c) {
+    return r >= 0 && r < 4 && c >= 0 && c < 4;
+  }
+
+  function isHomeBoard(boardId, playerColor) {
+    return BOARD_META[boardId].owner === playerColor;
+  }
+
+  function isOppositeColorBoard(boardId, passiveBoardId) {
+    return BOARD_META[boardId].color !== BOARD_META[passiveBoardId].color;
+  }
+
+  function checkWinner(boards) {
+    for (let b = 0; b < 4; b++) {
+      let blackCount = 0;
+      let whiteCount = 0;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (boards[b][r][c] === "black") blackCount++;
+          else if (boards[b][r][c] === "white") whiteCount++;
+        }
+      }
+      if (whiteCount === 0) return { winner: "black", boardId: b };
+      if (blackCount === 0) return { winner: "white", boardId: b };
+    }
+    return null;
+  }
+
+  // Passive move: 1 or 2 steps along one of 8 directions, no jumping, no pushing.
+  function getPassiveMovesForStone(boards, boardId, r, c, playerColor) {
+    if (!isHomeBoard(boardId, playerColor)) return [];
+    if (boards[boardId][r][c] !== playerColor) return [];
+
+    const moves = [];
+    for (const [dr, dc] of DIRS) {
+      for (let dist = 1; dist <= 2; dist++) {
+        const nr = r + dr * dist;
+        const nc = c + dc * dist;
+        if (!inBounds(nr, nc)) break;
+        if (boards[boardId][nr][nc] !== null) break;
+        moves.push({
+          boardId,
+          fromR: r,
+          fromC: c,
+          toR: nr,
+          toC: nc,
+          dr,
+          dc,
+          dist
+        });
+      }
+    }
+    return moves;
+  }
+
+  // Aggressive move: same direction (dr, dc) and distance (dist) on a board of opposite color
+  // to passiveBoardId. Can push at most 1 opponent stone by 1 step in (dr, dc).
+  function evaluateAggressiveMove(boards, boardId, r, c, playerColor, passiveMove) {
+    if (!passiveMove) return null;
+    if (!isOppositeColorBoard(boardId, passiveMove.boardId)) return null;
+    if (boards[boardId][r][c] !== playerColor) return null;
+
+    const { dr, dc, dist } = passiveMove;
+    const opp = opponentOf(playerColor);
+
+    const pathCells = [];
+    for (let step = 1; step <= dist; step++) {
+      const pr = r + dr * step;
+      const pc = c + dc * step;
+      if (!inBounds(pr, pc)) return null;
+      pathCells.push({ r: pr, c: pc, occupant: boards[boardId][pr][pc] });
+    }
+
+    const blockers = pathCells.filter(cell => cell.occupant !== null);
+    if (blockers.length > 1) return null;
+
+    if (blockers.length === 0) {
+      const dest = pathCells[pathCells.length - 1];
+      return {
+        boardId,
+        fromR: r,
+        fromC: c,
+        toR: dest.r,
+        toC: dest.c,
+        dr,
+        dc,
+        dist,
+        pushed: null
+      };
+    }
+
+    const blocker = blockers[0];
+    if (blocker.occupant === playerColor) return null;
+    if (blocker.occupant !== opp) return null;
+
+    const pushToR = blocker.r + dr;
+    const pushToC = blocker.c + dc;
+    const pushOffEdge = !inBounds(pushToR, pushToC);
+
+    if (!pushOffEdge && boards[boardId][pushToR][pushToC] !== null) {
+      return null;
+    }
+
+    return {
+      boardId,
+      fromR: r,
+      fromC: c,
+      toR: blocker.r,
+      toC: blocker.c,
+      dr,
+      dc,
+      dist,
+      pushed: {
+        fromR: blocker.r,
+        fromC: blocker.c,
+        toR: pushOffEdge ? null : pushToR,
+        toC: pushOffEdge ? null : pushToC,
+        offEdge: pushOffEdge
+      }
+    };
+  }
+
+  function applyPassiveMove(boards, move, playerColor) {
+    const next = cloneBoards(boards);
+    next[move.boardId][move.fromR][move.fromC] = null;
+    next[move.boardId][move.toR][move.toC] = playerColor;
+    return next;
+  }
+
+  function applyAggressiveMove(boards, aggMove, playerColor) {
+    const next = cloneBoards(boards);
+    const opp = opponentOf(playerColor);
+    const b = aggMove.boardId;
+
+    if (aggMove.pushed) {
+      const p = aggMove.pushed;
+      next[b][p.fromR][p.fromC] = null;
+      if (!p.offEdge) {
+        next[b][p.toR][p.toC] = opp;
+      }
+    }
+
+    next[b][aggMove.fromR][aggMove.fromC] = null;
+    next[b][aggMove.toR][aggMove.toC] = playerColor;
+    return next;
+  }
+
+  // Application state
+  const state = {
+    view: "lobby", // "lobby" | "game"
+    mode: "online", // "online" | "local"
+    preferredColor: "black",
+    myColor: "black", // in online mode: assigned seat; in local mode: active turn color
+    autoFlipLocal: true,
+    roomCode: null,
+    isHost: false,
+    connectedPeers: { black: false, white: false },
+
+    boards: createInitialBoards(),
+    turn: "black",
+    phase: "passive", // "passive" | "aggressive"
+    passiveMove: null,
+    prePassiveBoards: null,
+    lastTurnSummary: null,
+    winner: null,
+    winBoard: null,
+    rematch: { black: false, white: false },
+
+    selectedStone: null, // { boardId, r, c }
+    hoveredAggMove: null
+  };
+
+  let roomUnsubscribe = null;
+  let presenceRef = null;
+  let toastTimer = null;
+
+  // DOM references
+  const appEl = document.getElementById("app");
+  const lobbyView = document.getElementById("lobbyView");
+  const gameView = document.getElementById("gameView");
+  const arenaWrap = document.getElementById("arenaWrap");
+  const arenaEl = document.getElementById("arena");
+  const actionBarEl = document.getElementById("actionBar");
+
+  const logoHomeBtn = document.getElementById("logoHomeBtn");
+  const roomPill = document.getElementById("roomPill");
+  const turnPill = document.getElementById("turnPill");
+  const turnDot = document.getElementById("turnDot");
+  const turnText = document.getElementById("turnText");
+  const turnStrip = document.getElementById("turnStrip");
+  const turnStripPhase = document.getElementById("turnStripPhase");
+  const turnStripHint = document.getElementById("turnStripHint");
+  const flipToggleBtn = document.getElementById("flipToggleBtn");
+  const rulesBtn = document.getElementById("rulesBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+
+  const tabOnline = document.getElementById("tabOnline");
+  const tabLocal = document.getElementById("tabLocal");
+  const onlineControls = document.getElementById("onlineControls");
+  const localControls = document.getElementById("localControls");
+  const pickBlack = document.getElementById("pickBlack");
+  const pickWhite = document.getElementById("pickWhite");
+  const createRoomBtn = document.getElementById("createRoomBtn");
+  const joinCodeInput = document.getElementById("joinCodeInput");
+  const joinRoomBtn = document.getElementById("joinRoomBtn");
+  const startLocalBtn = document.getElementById("startLocalBtn");
+  const lobbyMsg = document.getElementById("lobbyMsg");
+
+  const undoPassiveBtn = document.getElementById("undoPassiveBtn");
+  const toastEl = document.getElementById("toast");
+
+  const rulesModal = document.getElementById("rulesModal");
+  const closeRulesBtn = document.getElementById("closeRulesBtn");
+  const winModal = document.getElementById("winModal");
+  const winTitle = document.getElementById("winTitle");
+  const winSub = document.getElementById("winSub");
+  const rematchBtn = document.getElementById("rematchBtn");
+  const winLobbyBtn = document.getElementById("winLobbyBtn");
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+
+  function syncArenaHeight() {
+    if (!arenaWrap || !arenaEl) return;
+    const h = arenaWrap.clientHeight;
+    if (h > 0) {
+      arenaEl.style.setProperty("--arena-h", `${h}px`);
+    }
+  }
+
+  window.addEventListener("resize", syncArenaHeight);
+  window.addEventListener("orientationchange", () => setTimeout(syncArenaHeight, 80));
+
+  function canActNow() {
+    if (state.winner) return false;
+    if (state.mode === "local") return true;
+    return state.turn === state.myColor;
+  }
+
+  function shouldFlipBoard() {
+    if (state.mode === "online") {
+      return state.myColor === "white";
+    }
+    return state.autoFlipLocal && state.turn === "white";
+  }
+
+  function resetMatchState() {
+    state.boards = createInitialBoards();
+    state.turn = "black";
+    state.phase = "passive";
+    state.passiveMove = null;
+    state.prePassiveBoards = null;
+    state.lastTurnSummary = null;
+    state.winner = null;
+    state.winBoard = null;
+    state.rematch = { black: false, white: false };
+    state.selectedStone = null;
+    state.hoveredAggMove = null;
+    if (state.mode === "local") {
+      state.myColor = "black";
+    }
+  }
+
+  function generateRoomCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 5; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
+  function serializeRoomState() {
+    return {
+      boards: state.boards,
+      turn: state.turn,
+      phase: state.phase,
+      passiveMove: state.passiveMove,
+      lastTurnSummary: state.lastTurnSummary,
+      winner: state.winner,
+      winBoard: state.winBoard,
+      rematch: state.rematch,
+      updatedAt: Date.now()
+    };
+  }
+
+  function hydrateFromRoomData(data) {
+    if (!data || !Array.isArray(data.boards)) return;
+    state.boards = data.boards.map(grid =>
+      Array.from({ length: 4 }, (_, r) =>
+        Array.from({ length: 4 }, (_, c) => {
+          const val = grid && grid[r] ? grid[r][c] : null;
+          return val === "black" || val === "white" ? val : null;
+        })
+      )
+    );
+    state.turn = data.turn === "white" ? "white" : "black";
+    state.phase = data.phase === "aggressive" ? "aggressive" : "passive";
+    state.passiveMove = data.passiveMove || null;
+    state.lastTurnSummary = data.lastTurnSummary || null;
+    state.winner = data.winner || null;
+    state.winBoard = typeof data.winBoard === "number" ? data.winBoard : null;
+    state.rematch = {
+      black: Boolean(data.rematch && data.rematch.black),
+      white: Boolean(data.rematch && data.rematch.white)
+    };
+    state.selectedStone = null;
+    state.hoveredAggMove = null;
+
+    if (data.players) {
+      state.connectedPeers = {
+        black: Boolean(data.players.black && data.players.black.online),
+        white: Boolean(data.players.white && data.players.white.online)
+      };
+    }
+
+    // If both players voted rematch, reset match cleanly
+    if (state.rematch.black && state.rematch.white && state.winner) {
+      resetMatchState();
+      if (state.mode === "online" && state.roomCode && firebaseReady && state.isHost) {
+        set(ref(db, `rooms/${state.roomCode}/game`), serializeRoomState());
+      }
+    }
+  }
+
+  async function cleanupRoomConnection() {
+    if (roomUnsubscribe) {
+      roomUnsubscribe();
+      roomUnsubscribe = null;
+    }
+    if (presenceRef) {
+      try {
+        await set(presenceRef, false);
+        await onDisconnect(presenceRef).cancel();
+      } catch (_) {}
+      presenceRef = null;
+    }
+    state.roomCode = null;
+    state.isHost = false;
+  }
+
+  async function subscribeToRoom(code, seatColor) {
+    if (!firebaseReady || !db) return;
+    if (roomUnsubscribe) {
+      roomUnsubscribe();
+      roomUnsubscribe = null;
+    }
+
+    const roomRef = ref(db, `rooms/${code}`);
+    presenceRef = ref(db, `rooms/${code}/players/${seatColor}/online`);
+
+    try {
+      await set(presenceRef, true);
+      await onDisconnect(presenceRef).set(false);
+    } catch (_) {}
+
+    roomUnsubscribe = onValue(roomRef, (snap) => {
+      if (!snap.exists()) return;
+      const val = snap.val();
+      if (val.game) {
+        hydrateFromRoomData(val.game);
+      }
+      if (val.players) {
+        state.connectedPeers = {
+          black: Boolean(val.players.black && val.players.black.online),
+          white: Boolean(val.players.white && val.players.white.online)
+        };
+      }
+      render();
+    });
+  }
+
+  async function publishRoomState() {
+    if (state.mode !== "online" || !state.roomCode) return;
+    if (!firebaseReady || !db) return;
+    try {
+      await set(ref(db, `rooms/${state.roomCode}/game`), serializeRoomState());
+    } catch (err) {
+      console.error("Failed to sync room:", err);
+      showToast("Sync error");
+    }
+  }
+
+  async function createOnlineRoom() {
+    const hostColor = state.preferredColor;
+    const guestColor = opponentOf(hostColor);
+    const code = generateRoomCode();
+
+    state.mode = "online";
+    state.myColor = hostColor;
+    state.isHost = true;
+    state.roomCode = code;
+    state.connectedPeers = { black: hostColor === "black", white: hostColor === "white" };
+    resetMatchState();
+    state.myColor = hostColor;
+
+    if (firebaseReady && db) {
+      createRoomBtn.disabled = true;
+      lobbyMsg.textContent = "Creating room...";
+      try {
+        const roomRef = ref(db, `rooms/${code}`);
+        const existing = await get(roomRef);
+        const finalCode = existing.exists() ? generateRoomCode() : code;
+        state.roomCode = finalCode;
+
+        await set(ref(db, `rooms/${finalCode}`), {
+          createdAt: Date.now(),
+          hostColor,
+          players: {
+            [hostColor]: { online: true, joinedAt: Date.now() },
+            [guestColor]: { online: false }
+          },
+          game: serializeRoomState()
+        });
+
+        await subscribeToRoom(finalCode, hostColor);
+        lobbyMsg.textContent = "";
+        state.view = "game";
+        render();
+      } catch (err) {
+        console.error(err);
+        lobbyMsg.textContent = "Could not create room. Check Firebase rules.";
+      } finally {
+        createRoomBtn.disabled = false;
+      }
+    } else {
+      lobbyMsg.textContent = "Firebase unavailable; opened local room preview.";
+      state.view = "game";
+      render();
+    }
+  }
+
+  async function joinOnlineRoom() {
+    const rawCode = joinCodeInput.value.trim().toUpperCase();
+    if (rawCode.length < 4) {
+      lobbyMsg.textContent = "Enter a room code.";
+      return;
+    }
+
+    if (!firebaseReady || !db) {
+      state.mode = "online";
+      state.roomCode = rawCode;
+      state.myColor = opponentOf(state.preferredColor);
+      state.isHost = false;
+      resetMatchState();
+      state.myColor = opponentOf(state.preferredColor);
+      state.view = "game";
+      render();
+      return;
+    }
+
+    joinRoomBtn.disabled = true;
+    lobbyMsg.textContent = "Joining room...";
+    try {
+      const roomRef = ref(db, `rooms/${rawCode}`);
+      const snap = await get(roomRef);
+      if (!snap.exists()) {
+        lobbyMsg.textContent = "Room not found.";
+        return;
+      }
+
+      const data = snap.val();
+      const hostColor = data.hostColor === "white" ? "white" : "black";
+      const assignedColor = opponentOf(hostColor);
+
+      await update(ref(db, `rooms/${rawCode}/players/${assignedColor}`), {
+        online: true,
+        joinedAt: Date.now()
+      });
+
+      state.mode = "online";
+      state.roomCode = rawCode;
+      state.myColor = assignedColor;
+      state.isHost = false;
+      if (data.game) {
+        hydrateFromRoomData(data.game);
+      } else {
+        resetMatchState();
+      }
+
+      await subscribeToRoom(rawCode, assignedColor);
+      lobbyMsg.textContent = "";
+      state.view = "game";
+      render();
+    } catch (err) {
+      console.error(err);
+      lobbyMsg.textContent = "Unable to join room.";
+    } finally {
+      joinRoomBtn.disabled = false;
+    }
+  }
+
+  function startLocalGame() {
+    state.mode = "local";
+    state.roomCode = null;
+    state.isHost = false;
+    resetMatchState();
+    state.view = "game";
+    render();
+  }
+
+  async function leaveToLobby() {
+    await cleanupRoomConnection();
+    winModal.classList.remove("open");
+    state.view = "lobby";
+    lobbyMsg.textContent = "";
+    render();
+  }
+
+  // Gameplay interactions
+  function handleStoneClick(boardId, r, c) {
+    if (!canActNow()) return;
+    const stoneColor = state.boards[boardId][r][c];
+    if (stoneColor !== state.turn) return;
+
+    if (state.phase === "passive") {
+      if (!isHomeBoard(boardId, state.turn)) {
+        showToast("Use a home board");
+        return;
+      }
+      const legal = getPassiveMovesForStone(state.boards, boardId, r, c, state.turn);
+      if (legal.length === 0) {
+        showToast("No valid moves");
+        return;
+      }
+      if (
+        state.selectedStone &&
+        state.selectedStone.boardId === boardId &&
+        state.selectedStone.r === r &&
+        state.selectedStone.c === c
+      ) {
+        state.selectedStone = null;
+      } else {
+        state.selectedStone = { boardId, r, c };
+      }
+      render();
+      return;
+    }
+
+    if (state.phase === "aggressive") {
+      if (!state.passiveMove) return;
+      if (!isOppositeColorBoard(boardId, state.passiveMove.boardId)) {
+        showToast("Select opposite board color");
+        return;
+      }
+      if (
+        state.selectedStone &&
+        state.selectedStone.boardId === boardId &&
+        state.selectedStone.r === r &&
+        state.selectedStone.c === c
+      ) {
+        state.selectedStone = null;
+        state.hoveredAggMove = null;
+      } else {
+        state.selectedStone = { boardId, r, c };
+        state.hoveredAggMove = null;
+      }
+      render();
+    }
+  }
+
+  async function handleSocketClick(boardId, r, c) {
+    if (!canActNow()) return;
+    if (!state.selectedStone) return;
+
+    const { boardId: sBoard, r: sR, c: sC } = state.selectedStone;
+
+    if (state.phase === "passive") {
+      const legal = getPassiveMovesForStone(state.boards, sBoard, sR, sC, state.turn);
+      const chosen = legal.find(m => m.boardId === boardId && m.toR === r && m.toC === c);
+      if (!chosen) return;
+
+      state.prePassiveBoards = cloneBoards(state.boards);
+      state.boards = applyPassiveMove(state.boards, chosen, state.turn);
+      state.passiveMove = chosen;
+      state.phase = "aggressive";
+      state.selectedStone = null;
+      state.hoveredAggMove = null;
+
+      await publishRoomState();
+      render();
+      return;
+    }
+
+    if (state.phase === "aggressive") {
+      if (sBoard !== boardId) return;
+      const evalMove = evaluateAggressiveMove(
+        state.boards,
+        sBoard,
+        sR,
+        sC,
+        state.turn,
+        state.passiveMove
+      );
+      if (!evalMove) return;
+
+      const isTargetDest = evalMove.toR === r && evalMove.toC === c;
+      const isVictimClick =
+        evalMove.pushed &&
+        evalMove.pushed.fromR === r &&
+        evalMove.pushed.fromC === c;
+
+      if (!isTargetDest && !isVictimClick) return;
+
+      const actor = state.turn;
+      state.boards = applyAggressiveMove(state.boards, evalMove, actor);
+      state.lastTurnSummary = {
+        actor,
+        passive: state.passiveMove,
+        aggressive: evalMove
+      };
+
+      const winInfo = checkWinner(state.boards);
+      if (winInfo) {
+        state.winner = winInfo.winner;
+        state.winBoard = winInfo.boardId;
+        state.passiveMove = null;
+        state.prePassiveBoards = null;
+        state.selectedStone = null;
+        state.hoveredAggMove = null;
+      } else {
+        state.turn = opponentOf(actor);
+        state.phase = "passive";
+        state.passiveMove = null;
+        state.prePassiveBoards = null;
+        state.selectedStone = null;
+        state.hoveredAggMove = null;
+        if (state.mode === "local") {
+          state.myColor = state.turn;
+        }
+      }
+
+      await publishRoomState();
+      render();
+    }
+  }
+
+  async function undoPassive() {
+    if (!canActNow()) return;
+    if (state.phase !== "aggressive" || !state.prePassiveBoards) return;
+
+    state.boards = cloneBoards(state.prePassiveBoards);
+    state.phase = "passive";
+    state.passiveMove = null;
+    state.prePassiveBoards = null;
+    state.selectedStone = null;
+    state.hoveredAggMove = null;
+
+    await publishRoomState();
+    render();
+  }
+
+  async function requestRematch() {
+    if (!state.winner) return;
+    const voter = state.mode === "local" ? "black" : state.myColor;
+
+    if (state.mode === "local") {
+      winModal.classList.remove("open");
+      resetMatchState();
+      render();
+      return;
+    }
+
+    state.rematch[voter] = true;
+    if (state.rematch.black && state.rematch.white) {
+      resetMatchState();
+      winModal.classList.remove("open");
+    } else {
+      showToast("Rematch requested");
+    }
+
+    if (firebaseReady && db && state.roomCode) {
+      try {
+        await set(ref(db, `rooms/${state.roomCode}/game`), serializeRoomState());
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    render();
+  }
+
+  // Rendering
+  function buildArenaDOM() {
+    arenaEl.innerHTML = "";
+    for (let b = 0; b < 4; b++) {
+      const meta = BOARD_META[b];
+      const boardDiv = document.createElement("div");
+      boardDiv.className = `board ${meta.color}`;
+      boardDiv.dataset.boardId = String(b);
+
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const cellDiv = document.createElement("div");
+          cellDiv.className = "cell";
+
+          const socketDiv = document.createElement("div");
+          socketDiv.className = "socket";
+          socketDiv.dataset.boardId = String(b);
+          socketDiv.dataset.r = String(r);
+          socketDiv.dataset.c = String(c);
+
+          socketDiv.addEventListener("click", () => handleSocketClick(b, r, c));
+
+          cellDiv.appendChild(socketDiv);
+          boardDiv.appendChild(cellDiv);
+        }
+      }
+      arenaEl.appendChild(boardDiv);
+    }
+  }
+
+  function render() {
+    const isGame = state.view === "game";
+    document.body.classList.toggle("in-game", isGame);
+    lobbyView.classList.toggle("hidden", isGame);
+    gameView.classList.toggle("hidden", !isGame);
+
+    roomPill.classList.toggle("hidden", !(isGame && state.mode === "online" && state.roomCode));
+    if (state.roomCode) {
+      const oppColor = opponentOf(state.myColor);
+      const oppOnline = state.connectedPeers[oppColor];
+      roomPill.innerHTML = `<span>${state.roomCode}</span><span style="opacity:0.65;">·</span><span>${oppOnline ? "2P" : "Waiting"}</span>`;
+    }
+
+    turnPill.classList.toggle("hidden", !isGame);
+    flipToggleBtn.classList.toggle("hidden", !(isGame && state.mode === "local"));
+    flipToggleBtn.classList.toggle("active", state.autoFlipLocal);
+    leaveBtn.classList.toggle("hidden", !isGame);
+
+    if (!isGame) return;
+
+    const turnLabel = state.turn === "black" ? "Black" : "White";
+    const phaseLabel = state.phase === "passive" ? "Passive" : "Aggressive";
+    turnDot.className = `dot ${state.turn === "white" ? "white" : ""} ${state.phase === "aggressive" ? "agg" : ""}`;
+    turnPill.classList.toggle("agg", state.phase === "aggressive");
+
+    if (state.mode === "online") {
+      const mine = state.turn === state.myColor;
+      turnText.textContent = mine ? `${turnLabel} · ${phaseLabel}` : `Opponent · ${phaseLabel}`;
+    } else {
+      turnText.textContent = `${turnLabel} · ${phaseLabel}`;
+    }
+
+    turnStrip.classList.toggle("agg", state.phase === "aggressive");
+    turnStripPhase.textContent = phaseLabel;
+
+    if (state.winner) {
+      turnStripHint.textContent = `${state.winner === "black" ? "Black" : "White"} won`;
+    } else if (state.mode === "online" && state.turn !== state.myColor) {
+      turnStripHint.textContent = "Waiting for opponent";
+    } else if (state.phase === "passive") {
+      turnStripHint.textContent = "Move 1–2 spaces on a home board";
+    } else {
+      const reqColor = state.passiveMove && BOARD_META[state.passiveMove.boardId].color === "light" ? "Dark" : "Light";
+      turnStripHint.textContent = `Match direction & distance on a ${reqColor} board`;
+    }
+
+    arenaEl.classList.toggle("flipped", shouldFlipBoard());
+
+    const activeTurnCanAct = canActNow();
+    let passiveDestSet = new Set();
+    let aggDestMap = new Map();
+
+    if (activeTurnCanAct && state.selectedStone) {
+      const { boardId: sB, r: sR, c: sC } = state.selectedStone;
+      if (state.phase === "passive") {
+        const legals = getPassiveMovesForStone(state.boards, sB, sR, sC, state.turn);
+        legals.forEach(m => passiveDestSet.add(`${m.boardId}:${m.toR}:${m.toC}`));
+      } else if (state.phase === "aggressive" && state.passiveMove) {
+        const evalMove = evaluateAggressiveMove(
+          state.boards,
+          sB,
+          sR,
+          sC,
+          state.turn,
+          state.passiveMove
+        );
+        if (evalMove) {
+          aggDestMap.set(`${evalMove.boardId}:${evalMove.toR}:${evalMove.toC}`, evalMove);
+          if (evalMove.pushed) {
+            aggDestMap.set(`${evalMove.boardId}:${evalMove.pushed.fromR}:${evalMove.pushed.fromC}`, evalMove);
+          }
+        }
+      }
+    }
+
+    const activePreviewMove = state.hoveredAggMove || (aggDestMap.size > 0 ? [...aggDestMap.values()][0] : null);
+
+    const boardEls = arenaEl.querySelectorAll(".board");
+    boardEls.forEach((boardEl) => {
+      const bId = Number(boardEl.dataset.boardId);
+      boardEl.classList.remove("active-home", "active-agg");
+      if (activeTurnCanAct && !state.winner) {
+        if (state.phase === "passive" && isHomeBoard(bId, state.turn)) {
+          boardEl.classList.add("active-home");
+        } else if (state.phase === "aggressive" && state.passiveMove && isOppositeColorBoard(bId, state.passiveMove.boardId)) {
+          boardEl.classList.add("active-agg");
+        }
+      }
+
+      const sockets = boardEl.querySelectorAll(".socket");
+      sockets.forEach((socketEl) => {
+        const r = Number(socketEl.dataset.r);
+        const c = Number(socketEl.dataset.c);
+        const key = `${bId}:${r}:${c}`;
+
+        socketEl.className = "socket";
+        socketEl.onmouseenter = null;
+        socketEl.onmouseleave = null;
+
+        if (passiveDestSet.has(key)) {
+          socketEl.classList.add("dest-passive");
+        }
+
+        if (aggDestMap.has(key)) {
+          const mv = aggDestMap.get(key);
+          socketEl.classList.add("dest-agg");
+          if (mv.pushed && mv.pushed.fromR === r && mv.pushed.fromC === c) {
+            socketEl.classList.add("push-victim");
+          }
+          socketEl.onmouseenter = () => {
+            state.hoveredAggMove = mv;
+            render();
+          };
+          socketEl.onmouseleave = () => {
+            if (state.hoveredAggMove === mv) {
+              state.hoveredAggMove = null;
+              render();
+            }
+          };
+        }
+
+        if (
+          activePreviewMove &&
+          activePreviewMove.boardId === bId &&
+          activePreviewMove.pushed &&
+          activePreviewMove.pushed.offEdge &&
+          activePreviewMove.pushed.fromR === r &&
+          activePreviewMove.pushed.fromC === c
+        ) {
+          socketEl.classList.add("push-out");
+        }
+
+        const existingStone = socketEl.querySelector(".stone");
+        if (existingStone) existingStone.remove();
+
+        const occupant = state.boards[bId][r][c];
+        if (occupant) {
+          const stoneEl = document.createElement("div");
+          stoneEl.className = `stone ${occupant}`;
+
+          if (activeTurnCanAct && occupant === state.turn) {
+            if (state.phase === "passive" && isHomeBoard(bId, state.turn)) {
+              const hasMoves = getPassiveMovesForStone(state.boards, bId, r, c, state.turn).length > 0;
+              if (hasMoves) stoneEl.classList.add("movable");
+            } else if (
+              state.phase === "aggressive" &&
+              state.passiveMove &&
+              isOppositeColorBoard(bId, state.passiveMove.boardId)
+            ) {
+              stoneEl.classList.add("movable");
+            }
+          }
+
+          if (
+            state.selectedStone &&
+            state.selectedStone.boardId === bId &&
+            state.selectedStone.r === r &&
+            state.selectedStone.c === c
+          ) {
+            stoneEl.classList.add("selected");
+            if (state.phase === "aggressive") stoneEl.classList.add("agg-selected");
+          }
+
+          if (
+            state.phase === "aggressive" &&
+            state.passiveMove &&
+            state.passiveMove.boardId === bId &&
+            state.passiveMove.toR === r &&
+            state.passiveMove.toC === c
+          ) {
+            stoneEl.classList.add("passive-anchor");
+          }
+
+          if (
+            activePreviewMove &&
+            activePreviewMove.boardId === bId &&
+            activePreviewMove.pushed &&
+            activePreviewMove.pushed.fromR === r &&
+            activePreviewMove.pushed.fromC === c
+          ) {
+            stoneEl.classList.add("pushed-preview");
+          }
+
+          stoneEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleStoneClick(bId, r, c);
+          });
+
+          socketEl.appendChild(stoneEl);
+        }
+      });
+    });
+
+    undoPassiveBtn.disabled = !(activeTurnCanAct && state.phase === "aggressive" && state.prePassiveBoards);
+
+    if (state.winner) {
+      const winName = state.winner === "black" ? "Black Wins" : "White Wins";
+      winTitle.textContent = winName;
+      if (state.mode === "online") {
+        const voted = state.rematch[state.myColor];
+        winSub.textContent = voted ? "Waiting for opponent rematch..." : "All opponent stones removed from a board.";
+      } else {
+        winSub.textContent = "All opponent stones removed from a board.";
+      }
+      winModal.classList.add("open");
+    } else {
+      winModal.classList.remove("open");
+    }
+
+    requestAnimationFrame(syncArenaHeight);
+  }
+
+  // Event listeners
+  tabOnline.addEventListener("click", () => {
+    state.mode = "online";
+    tabOnline.classList.add("active");
+    tabOnline.setAttribute("aria-selected", "true");
+    tabLocal.classList.remove("active");
+    tabLocal.setAttribute("aria-selected", "false");
+    onlineControls.classList.remove("hidden");
+    localControls.classList.add("hidden");
+    lobbyMsg.textContent = "";
+  });
+
+  tabLocal.addEventListener("click", () => {
+    state.mode = "local";
+    tabLocal.classList.add("active");
+    tabLocal.setAttribute("aria-selected", "true");
+    tabOnline.classList.remove("active");
+    tabOnline.setAttribute("aria-selected", "false");
+    localControls.classList.remove("hidden");
+    onlineControls.classList.add("hidden");
+    lobbyMsg.textContent = "";
+  });
+
+  pickBlack.addEventListener("click", () => {
+    state.preferredColor = "black";
+    pickBlack.classList.add("selected");
+    pickWhite.classList.remove("selected");
+  });
+
+  pickWhite.addEventListener("click", () => {
+    state.preferredColor = "white";
+    pickWhite.classList.add("selected");
+    pickBlack.classList.remove("selected");
+  });
+
+  createRoomBtn.addEventListener("click", createOnlineRoom);
+  joinRoomBtn.addEventListener("click", joinOnlineRoom);
+  joinCodeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") joinOnlineRoom();
+  });
+  startLocalBtn.addEventListener("click", startLocalGame);
+
+  roomPill.addEventListener("click", () => {
+    if (!state.roomCode) return;
+    navigator.clipboard?.writeText(state.roomCode).catch(() => {});
+    showToast(`Copied ${state.roomCode}`);
+  });
+
+  flipToggleBtn.addEventListener("click", () => {
+    state.autoFlipLocal = !state.autoFlipLocal;
+    render();
+  });
+
+  undoPassiveBtn.addEventListener("click", undoPassive);
+  leaveBtn.addEventListener("click", leaveToLobby);
+  logoHomeBtn.addEventListener("click", () => {
+    if (state.view === "game") leaveToLobby();
+  });
+
+  rulesBtn.addEventListener("click", () => rulesModal.classList.add("open"));
+  closeRulesBtn.addEventListener("click", () => rulesModal.classList.remove("open"));
+  rulesModal.addEventListener("click", (e) => {
+    if (e.target === rulesModal) rulesModal.classList.remove("open");
+  });
+
+  rematchBtn.addEventListener("click", requestRematch);
+  winLobbyBtn.addEventListener("click", leaveToLobby);
+
+  buildArenaDOM();
+  render();
+</script>
+</body>
+</html>
